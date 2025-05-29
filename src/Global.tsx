@@ -1,5 +1,3 @@
-
-
 export enum ValueType {
   NUMBER,
   NUMBERS_1_12,
@@ -20,7 +18,7 @@ export enum ValueType {
 
 export interface Item {
   type: ValueType;
-  value: number;
+  value?: number;
   valueSplit: number[];
 }
 

@@ -62,7 +62,7 @@ class RouletteWrapper extends React.Component<any, any> {
   componentDidMount() {
     this.socketServer.open();
     this.socketServer.on('stage-change', (data: string) => {
-      var gameData = JSON.parse(data) as GameData;
+      const gameData: GameData = JSON.parse(data);
       this.setGameData(gameData);      
     });
 
@@ -110,9 +110,10 @@ class RouletteWrapper extends React.Component<any, any> {
     if (chipValue === 0 || chipValue === null) {
       return;
     }
-    let currentChip = {} as PlacedChip;
-    currentChip.item = item;
-    currentChip.sum = chipValue;
+    const currentChip: PlacedChip = {
+      item: item,
+      sum: chipValue
+    };
 
     console.log(this.state.chipsData.placedChips);
     console.log(item);
@@ -153,25 +154,26 @@ class RouletteWrapper extends React.Component<any, any> {
   }
 
   onSpinClick() {
-    var nextNumber = this.numberRef!.current!.value;
-    if (nextNumber != null) {
+    const nextNumber = this.numberRef?.current?.value;
+    if (nextNumber) {
       this.setState({ number: { next: nextNumber } });
     }
   }
 
   placeBet() { 
-    var placedChipsMap = this.state.chipsData.placedChips
-    var chips: PlacedChip[] = new Array()
-    for(let key of Array.from( placedChipsMap.keys()) ) {
-
-      var chipsPlaced = placedChipsMap.get(key) as PlacedChip
-      console.log("place chips");
-      console.log(chips);
-      console.log(chipsPlaced);
-      console.log(chips.length);
-      chips.push(chipsPlaced);
-     
-   }
+    const placedChipsMap = this.state.chipsData.placedChips;
+    const chips: PlacedChip[] = [];
+    
+    for(const key of Array.from(placedChipsMap.keys())) {
+      const chipsPlaced = placedChipsMap.get(key);
+      if (chipsPlaced) {
+        console.log("place chips");
+        console.log(chips);
+        console.log(chipsPlaced);
+        console.log(chips.length);
+        chips.push(chipsPlaced);
+      }
+    }
     this.socketServer.emit("place-bet", JSON.stringify(chips));
   }
 

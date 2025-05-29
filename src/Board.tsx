@@ -6,15 +6,15 @@ var classNames = require("classnames");
 
 class Board extends React.Component<any, any> {
   numbers: Item[][];
-  other_1_12 = { type: ValueType.NUMBERS_1_12 } as Item;
-  other_2_12 = { type: ValueType.NUMBERS_2_12 } as Item;
-  other_3_12 = { type: ValueType.NUMBERS_3_12 } as Item;
-  other_1_18 = { type: ValueType.NUMBERS_1_18 } as Item;
-  other_19_36 = { type: ValueType.NUMBERS_19_36 } as Item;
-  other_even = { type: ValueType.EVEN } as Item;
-  other_odd = { type: ValueType.ODD } as Item;
-  other_red = { type: ValueType.RED } as Item;
-  other_black = { type: ValueType.BLACK } as Item;
+  other_1_12: Item = { type: ValueType.NUMBERS_1_12, valueSplit: [] };
+  other_2_12: Item = { type: ValueType.NUMBERS_2_12, valueSplit: [] };
+  other_3_12: Item = { type: ValueType.NUMBERS_3_12, valueSplit: [] };
+  other_1_18: Item = { type: ValueType.NUMBERS_1_18, valueSplit: [] };
+  other_19_36: Item = { type: ValueType.NUMBERS_19_36, valueSplit: [] };
+  other_even: Item = { type: ValueType.EVEN, valueSplit: [] };
+  other_odd: Item = { type: ValueType.ODD, valueSplit: [] };
+  other_red: Item = { type: ValueType.RED, valueSplit: [] };
+  other_black: Item = { type: ValueType.BLACK, valueSplit: [] };
   totalNumbers = 37;
   rouletteWheenNumbers: number[];
 
@@ -26,28 +26,31 @@ class Board extends React.Component<any, any> {
     this.rouletteWheenNumbers = props.rouletteData.numbers;
   }
 
-  getRouletteColor = (number: number) => {
+  getRouletteColor = (number: number | undefined | null): string => {
+    if (number === undefined || number === null) return "none";
     var index = this.rouletteWheenNumbers.indexOf(number);
     const i =
       index >= 0
         ? index % this.totalNumbers
         : this.totalNumbers - Math.abs(index % this.totalNumbers);
-    return i == 0 || number == null ? "none" : i % 2 == 0 ? "black" : "red";
+    return i === 0 ? "none" : i % 2 === 0 ? "black" : "red";
   };
 
   getCellItemFromCellItemType(type: any) {}
-  getClassNamesFromCellItemType(type: ValueType, number: number | null) {
+  getClassNamesFromCellItemType(type: ValueType, number: number | undefined | null) {
     var isEvenOdd = 0;
-    if (number != null && type === ValueType.NUMBER && number !== 0) {
+    const validNumber = number !== null && number !== undefined;
+
+    if (validNumber && type === ValueType.NUMBER && number !== 0) {
       if (number % 2 === 0) {
         isEvenOdd = 1;
       } else {
         isEvenOdd = 2;
       }
     }
+
     let numberValue = "value-" + number;
     var cellClass = classNames({
-      //[`${numberValue}`]: true,
       "board-cell-number": type === ValueType.NUMBER,
       "board-cell-double-split": type === ValueType.DOUBLE_SPLIT,
       "board-cell-quad-split": type === ValueType.QUAD_SPLIT,
@@ -57,25 +60,25 @@ class Board extends React.Component<any, any> {
       "board-cell-odd": type === ValueType.ODD || isEvenOdd === 2,
       "board-cell-number-1-18":
         type === ValueType.NUMBERS_1_18 ||
-        (number !== null && number >= 1 && number <= 18 && type === ValueType.NUMBER),
+        (validNumber && number >= 1 && number <= 18 && type === ValueType.NUMBER),
       "board-cell-number-19-36":
         type === ValueType.NUMBERS_19_36 ||
-        (number !== null && number >= 19 && number <= 36 && type === ValueType.NUMBER),
+        (validNumber && number >= 19 && number <= 36 && type === ValueType.NUMBER),
       "board-cell-number-1-12":
         type === ValueType.NUMBERS_1_12 ||
-        (number !== null && number % 3 === 0 && type === ValueType.NUMBER && number !== 0),
+        (validNumber && number % 3 === 0 && type === ValueType.NUMBER && number !== 0),
       "board-cell-number-2-12":
         type === ValueType.NUMBERS_2_12 ||
-        (number !== null && number % 3 === 2 && type === ValueType.NUMBER),
+        (validNumber && number % 3 === 2 && type === ValueType.NUMBER),
       "board-cell-number-3-12":
         type === ValueType.NUMBERS_3_12 ||
-        (number !== null && number % 3 === 1 && type === ValueType.NUMBER),
+        (validNumber && number % 3 === 1 && type === ValueType.NUMBER),
       "board-cell-red":
         type === ValueType.RED ||
-        (number !== null && this.getRouletteColor(number) === "red" && type === ValueType.NUMBER),
+        (validNumber && this.getRouletteColor(number) === "red" && type === ValueType.NUMBER),
       "board-cell-black":
         type === ValueType.BLACK ||
-        (number !== null && this.getRouletteColor(number) === "black" && type === ValueType.NUMBER)
+        (validNumber && this.getRouletteColor(number) === "black" && type === ValueType.NUMBER)
     });
 
     return cellClass;
@@ -108,14 +111,22 @@ class Board extends React.Component<any, any> {
         prevStartNumberSub = 2;
       }
       if (i === 1) {
-        let cell = {} as Item;
+        const cell: Item = {
+          type: ValueType.NUMBER,
+          value: 0,
+          valueSplit: []
+        };
         cell.type = ValueType.NUMBER;
         cell.value = 0;
 
         rowList.push(cell);
       }
       for (let j = 1; j <= 26; j++) {
-        let cell = {} as Item;
+        const cell: Item = {
+          type: ValueType.EMPTY,
+          value: 0,
+          valueSplit: []
+        };
 
         if (j > 24) {
           cell.type = ValueType.EMPTY;
@@ -451,7 +462,6 @@ class Board extends React.Component<any, any> {
                     onCellClick={this.onCellClick} topMin={undefined} topMax={undefined}                  />
                 </tr>
                 <tr>
-                  <td></td>
                   <td></td>
                   <td></td>
                   <td></td>
