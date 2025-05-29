@@ -2,11 +2,15 @@
   "name": "mp-roulette",
   "version": "1.0.1",
   "description": "Roulette Multiplayer",
+  "homepage": "https://joip1sol.github.io/timba/",
   "main": "src/index.tsx",
   "type": "module",
   "scripts": {
     "start": "concurrently \"npm run server\" \"react-scripts start\"",
-    "server": "node --experimental-specifier-resolution=node --loader ts-node/esm  server/server.ts localhost 8080"
+    "server": "node --experimental-specifier-resolution=node --loader ts-node/esm  server/server.ts localhost 8080",
+    "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -39,6 +43,7 @@
     "@types/node": "^18.11.15",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.9",
+    "gh-pages": "^6.3.0",
     "nodemon": "2.0.4",
     "react-error-overlay": "^6.0.9",
     "tslib": "^2.4.1"
