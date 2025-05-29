@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/timba/static/css/main.31c96e56.chunk.css",
+    "main.js": "/timba/static/js/main.ef0c3ce3.chunk.js",
+    "main.js.map": "/timba/static/js/main.ef0c3ce3.chunk.js.map",
+    "runtime-main.js": "/timba/static/js/runtime-main.ea723308.js",
+    "runtime-main.js.map": "/timba/static/js/runtime-main.ea723308.js.map",
+    "static/js/2.dedf0abc.chunk.js": "/timba/static/js/2.dedf0abc.chunk.js",
+    "static/js/2.dedf0abc.chunk.js.map": "/timba/static/js/2.dedf0abc.chunk.js.map",
+    "index.html": "/timba/index.html",
+    "static/css/main.31c96e56.chunk.css.map": "/timba/static/css/main.31c96e56.chunk.css.map",
+    "static/js/2.dedf0abc.chunk.js.LICENSE.txt": "/timba/static/js/2.dedf0abc.chunk.js.LICENSE.txt",
+    "static/media/styles.css": "/timba/static/media/roulette_5.847412dc.png"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.ea723308.js",
+    "static/js/2.dedf0abc.chunk.js",
+    "static/css/main.31c96e56.chunk.css",
+    "static/js/main.ef0c3ce3.chunk.js"
+  ]
+}
