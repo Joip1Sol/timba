@@ -2,16 +2,16 @@
   "name": "mp-roulette",
   "version": "1.0.1",
   "description": "Roulette Multiplayer",
-  "homepage": "http://localhost:3000",
+  "private": true,
   "main": "src/index.tsx",
   "type": "module",
   "scripts": {
     "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
     "server": "set NODE_OPTIONS=--openssl-legacy-provider && node --experimental-specifier-resolution=node --loader ts-node/esm server/server.ts",
     "dev": "set NODE_OPTIONS=--openssl-legacy-provider && concurrently \"npm run server\" \"npm run start\"",
-    "build": "react-scripts build",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -44,7 +44,6 @@
     "@types/node": "^18.11.15",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.9",
-    "gh-pages": "^6.3.0",
     "nodemon": "2.0.4",
     "react-error-overlay": "^6.0.9",
     "tslib": "^2.4.1"
