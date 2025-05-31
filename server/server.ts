@@ -2,6 +2,16 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { GameData, GameStages, PlacedChip, ValueType, Winner} from "../src/Global";
 import { Timer } from "easytimer.js";
+import mongoose from 'mongoose';
+import { User } from './models/User.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Conexión a MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ruleta')
+  .then(() => console.log('Conectado a MongoDB'))
+  .catch(err => console.error('Error conectando a MongoDB:', err));
 
 /** Server Handling */
 const httpServer = createServer();
@@ -11,9 +21,9 @@ const io = new Server(httpServer, {
   }
 });
 var timer = new Timer();
-var users = new Map<string, string>()
+var users = new Map<string, string>();
 let gameData = {} as GameData;
-let usersData = {} as Map<string, PlacedChip[]>;
+let usersData = new Map<string, PlacedChip[]>();
 let wins = [] as Winner[];
 timer.addEventListener('secondsUpdated', function (e: any) {
   var currentSeconds = timer.getTimeValues().seconds;
@@ -24,35 +34,38 @@ timer.addEventListener('secondsUpdated', function (e: any) {
     gameData.stage = GameStages.PLACE_BET
     wins = []
     sendStageEvent(gameData)
-  } else if (currentSeconds == 25) {
+  } else if (currentSeconds == 20) {
     gameData.stage = GameStages.NO_MORE_BETS
-    gameData.value = getRandomNumberInt(0, 36);
+    const randomValue = getRandomNumberInt(0, 36);
+    gameData.value = randomValue;
     console.log("No More Bets")
     sendStageEvent(gameData)
 
-    for(let key of Array.from( usersData.keys()) ) {
-       var username = users.get(key);
-       if (username != undefined) {
-        var chipsPlaced = usersData.get(key) as PlacedChip[]
+    for(let key of Array.from(usersData.keys())) {
+      var username = users.get(key) || "Guest";
+      var chipsPlaced = usersData.get(key) as PlacedChip[]
+      if (chipsPlaced && gameData.value !== undefined) {
         var sumWon = calculateWinnings(gameData.value, chipsPlaced)
+        updateWinnings(key, sumWon);
         wins.push({
-            username: username,
-            sum: sumWon
+          username: username,
+          sum: sumWon
         });
       }
     }
 
-  } else if (currentSeconds == 35) {
+  } else if (currentSeconds == 25) {
     console.log("Winners")
     gameData.stage = GameStages.WINNERS
-    // sort winners desc
     if (gameData.history == undefined) {
       gameData.history = []
     } 
-    gameData.history.push(gameData.value)
+    if (gameData.value !== undefined) {
+      gameData.history.push(gameData.value)
 
-    if (gameData.history.length > 10) {
-      gameData.history.shift();
+      if (gameData.history.length > 10) {
+        gameData.history.shift();
+      }
     }
     gameData.wins = wins.sort((a,b) => b.sum - a.sum);
     sendStageEvent(gameData)
@@ -62,14 +75,49 @@ timer.addEventListener('secondsUpdated', function (e: any) {
 
 io.on("connection", (socket) => {
   
-  socket.on('enter', (data: string) => {
-    users.set(socket.id, data);
-    sendStageEvent(gameData);
+  socket.on('enter', async (username: string) => {
+    try {
+      // Buscar usuario o crear si no existe
+      let user = await User.findOne({ username });
+      if (!user) {
+        user = await User.create({ username });
+      }
+      users.set(socket.id, username);
+      // Enviar los créditos actuales al cliente
+      socket.emit('credits-update', user.credits);
+      sendStageEvent(gameData);
+    } catch (error) {
+      console.error('Error al procesar entrada de usuario:', error);
+    }
   });
 
-  socket.on('place-bet', (data: string) => {
-    var gameData = JSON.parse(data) as PlacedChip[]
-    usersData.set(socket.id, gameData)
+  socket.on('place-bet', async (data: string) => {
+    try {
+      const gameData = JSON.parse(data) as PlacedChip[];
+      const username = users.get(socket.id);
+      if (!username) return;
+
+      const user = await User.findOne({ username });
+      if (!user) return;
+
+      // Calcular total de apuestas
+      const totalBet = gameData.reduce((sum, chip) => sum + chip.sum, 0);
+
+      // Verificar si tiene suficientes créditos
+      if (user.credits < totalBet) {
+        socket.emit('bet-error', 'No tienes suficientes créditos');
+        return;
+      }
+
+      // Restar créditos y guardar apuesta
+      user.credits -= totalBet;
+      await user.save();
+      
+      usersData.set(socket.id, gameData);
+      socket.emit('credits-update', user.credits);
+    } catch (error) {
+      console.error('Error al procesar apuesta:', error);
+    }
   });
   socket.on("disconnect", (reason) => {
     users.delete(socket.id);
@@ -154,4 +202,24 @@ function calculateWinnings(winningNumber: number, placedChips: PlacedChip[]) {
   }
 
   return win;
+}
+
+async function updateWinnings(socketId: string, winAmount: number) {
+  try {
+    const username = users.get(socketId);
+    if (!username) return;
+
+    const user = await User.findOne({ username });
+    if (!user) return;
+
+    user.credits += winAmount;
+    await user.save();
+
+    const socket = io.sockets.sockets.get(socketId);
+    if (socket) {
+      socket.emit('credits-update', user.credits);
+    }
+  } catch (error) {
+    console.error('Error al actualizar ganancias:', error);
+  }
 }

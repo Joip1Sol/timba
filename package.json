@@ -2,13 +2,14 @@
   "name": "mp-roulette",
   "version": "1.0.1",
   "description": "Roulette Multiplayer",
-  "homepage": "https://joip1sol.github.io/timba/",
+  "homepage": "http://localhost:3000",
   "main": "src/index.tsx",
   "type": "module",
   "scripts": {
-    "start": "concurrently \"npm run server\" \"react-scripts start\"",
-    "server": "node --experimental-specifier-resolution=node --loader ts-node/esm  server/server.ts localhost 8080",
-    "build": "react-scripts build && type nul > build/.nojekyll",
+    "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
+    "server": "set NODE_OPTIONS=--openssl-legacy-provider && node --experimental-specifier-resolution=node --loader ts-node/esm server/server.ts",
+    "dev": "set NODE_OPTIONS=--openssl-legacy-provider && concurrently \"npm run server\" \"npm run start\"",
+    "build": "react-scripts build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },

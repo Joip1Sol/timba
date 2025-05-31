@@ -2,7 +2,7 @@ import React from "react";
 import Wheel from "./Wheel";
 import Board from "./Board";
 import { List, Button, Progress } from '@mantine/core';
-import { Item, PlacedChip, RouletteWrapperState, GameData, GameStages } from "./Global";
+import { Item, PlacedChip, RouletteWrapperState, GameData, GameStages, Winner } from "./Global";
 import { Timer } from "easytimer.js";
 import WebApp from '@twa-dev/sdk';
 import classNames from "classnames";
@@ -39,6 +39,7 @@ class RouletteWrapper extends React.Component<any, any> {
     endTime: 0,
     progressCountdown: 0,
     time_remaining: 0,
+    credits: 0,
   };
   socketServer: any;
   animateProgress: any;
@@ -60,25 +61,55 @@ class RouletteWrapper extends React.Component<any, any> {
   }
 
   componentDidMount() {
-    this.socketServer.open();
-    this.socketServer.on('stage-change', (data: string) => {
-      const gameData: GameData = JSON.parse(data);
-      this.setGameData(gameData);      
-    });
+    if (this.socketServer) {
+      this.socketServer.open();
+      this.socketServer.on('stage-change', (data: string) => {
+        try {
+          const gameData = JSON.parse(data);
+          
+          this.setState({
+            stage: gameData.stage || GameStages.NONE,
+            time_remaining: gameData.time_remaining || 0,
+            winners: gameData.wins || [],
+            history: gameData.history || [],
+            number: {
+              ...this.state.number,
+              next: gameData.value !== undefined ? gameData.value.toString() : null
+            }
+          });
+        } catch (error) {
+          console.error('Error parsing game data:', error);
+        }
+      });
 
-    this.socketServer.on("connect", () => {
-      this.socketServer.emit("enter", this.state.username);
-      
-      // Notificar a Telegram que la app está lista
-      WebApp.ready();
-      
-      // Configurar el tema según Telegram
-      document.body.style.backgroundColor = WebApp.backgroundColor;
-      document.body.classList.add(WebApp.colorScheme);
-    });
+      this.socketServer.on("credits-update", (credits: number) => {
+        this.setState({ credits });
+      });
 
-    // Expandir la webapp a pantalla completa
-    WebApp.expand();
+      this.socketServer.on("bet-error", (message: string) => {
+        alert(message);
+      });
+
+      this.socketServer.on("connect", () => {
+        if (this.socketServer && this.state.username) {
+          this.socketServer.emit("enter", this.state.username);
+          
+          // Notificar a Telegram que la app está lista
+          WebApp.ready();
+          
+          // Configurar el tema según Telegram
+          if (WebApp.backgroundColor) {
+            document.body.style.backgroundColor = WebApp.backgroundColor;
+          }
+          if (WebApp.colorScheme) {
+            document.body.classList.add(WebApp.colorScheme);
+          }
+        }
+      });
+
+      // Expandir la webapp a pantalla completa
+      WebApp.expand();
+    }
   }
 
   componentWillUnmount() {
@@ -86,30 +117,69 @@ class RouletteWrapper extends React.Component<any, any> {
   }
 
   setGameData(gameData: GameData) { 
-    if (gameData.stage === GameStages.NO_MORE_BETS) { // PLACE BET from 25 to 35
-      var endTime = 35;
-      var nextNumber = gameData.value
-      this.setState({ endTime: endTime, progressCountdown: endTime - gameData.time_remaining, number: { next: nextNumber }, stage: gameData.stage, time_remaining: gameData.time_remaining}); 
-    } else if (gameData.stage === GameStages.WINNERS) { // PLACE BET from 35 to 59
-      var endTime = 59;
-      if (gameData.wins.length > 0) {
-        this.setState({ endTime: endTime, progressCountdown: endTime - gameData.time_remaining,winners: gameData.wins,stage: gameData.stage, time_remaining: gameData.time_remaining, history: gameData.history }); 
-      } else {
-        this.setState({ endTime: endTime, progressCountdown: endTime - gameData.time_remaining, stage: gameData.stage, time_remaining: gameData.time_remaining, history: gameData.history }); 
-     }
-    } else { // PLACE BET from 0 to 25
-      var endTime = 25;
-      this.setState({endTime: endTime, progressCountdown: endTime - gameData.time_remaining, stage: gameData.stage , time_remaining: gameData.time_remaining}); 
+    // Validación inicial de datos
+    if (!gameData || typeof gameData.time_remaining !== 'number' || !gameData.stage) {
+      console.error('Datos de juego inválidos recibidos');
+      WebApp.showAlert('Error al recibir datos del juego');
+      return;
+    }
+
+    const timeRemaining = gameData.time_remaining;
+    const stage = gameData.stage;
+    let endTime = 25; // valor por defecto para PLACE_BET
+
+    let stateUpdate: Partial<RouletteWrapperState> = {
+      time_remaining: timeRemaining,
+      stage
+    };
+
+    if (stage === GameStages.NO_MORE_BETS) {
+      endTime = 35;
+      stateUpdate = {
+        ...stateUpdate,
+        endTime,
+        progressCountdown: endTime - timeRemaining,
+        number: { next: gameData.value?.toString() || null }
+      };
+    } else if (stage === GameStages.WINNERS) {
+      endTime = 59;
+      stateUpdate = {
+        ...stateUpdate,
+        endTime,
+        progressCountdown: endTime - timeRemaining,
+        history: Array.isArray(gameData.history) ? gameData.history : [],
+        winners: Array.isArray(gameData.wins) ? gameData.wins : []
+      };
+    } else {
+      stateUpdate = {
+        ...stateUpdate,
+        endTime,
+        progressCountdown: endTime - timeRemaining
+      };
+    }
+
+    try {
+      this.setState(stateUpdate, () => {
+        // Notificar a Telegram que los datos se han actualizado
+        if (WebApp.isVersionAtLeast('6.1') && WebApp.HapticFeedback) {
+          WebApp.HapticFeedback.notificationOccurred('success');
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al actualizar el estado:', errorMessage);
+      WebApp.showAlert('Error al actualizar el estado del juego');
     }
   }
 
   onCellClick(item: Item) {
     var currentChips = this.state.chipsData.placedChips;
-
     var chipValue = this.state.chipsData.selectedChip;
+    
     if (chipValue === 0 || chipValue === null) {
       return;
     }
+
     const currentChip: PlacedChip = {
       item: item,
       sum: chipValue
@@ -117,8 +187,10 @@ class RouletteWrapper extends React.Component<any, any> {
 
     console.log(this.state.chipsData.placedChips);
     console.log(item);
-    if (currentChips.get(item) !== undefined) {
-      currentChip.sum += currentChips.get(item).sum;
+    
+    const existingChip = currentChips.get(item);
+    if (existingChip) {
+      currentChip.sum += existingChip.sum;
     }
 
     currentChips.set(item, currentChip);
@@ -188,6 +260,20 @@ class RouletteWrapper extends React.Component<any, any> {
   render() {
     return (
       <div>
+        <div className="credits-display" style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          padding: '10px 20px',
+          backgroundColor: '#2C2E43',
+          borderRadius: '8px',
+          color: '#FFD700',
+          fontSize: '1.2em',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        }}>
+          Créditos: {this.state.credits}
+        </div>
         <div>
           <table className={"rouletteWheelWrapper"}>
             <tr>

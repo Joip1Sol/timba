@@ -144,8 +144,7 @@ body {
 #app table,
 #app td,
 #app th {
-  /*border: 4px solid #fff700;
-  border-collapse: collapse;*/
+  border-collapse: collapse;
 }
 
 
@@ -326,14 +325,11 @@ div.chip-5-placed {
   text-align: center;
   background-color: rgb(41, 40, 40);
 }
-.winnerHistory {
-
-}
 .winnerHistory div {
   float:left; 
   color:#fff;
   font-weight: 900;
-  line-height: 40px;;
+  line-height: 40px;
   margin-left:20px;
   margin-top:10px;
   width: 40px;
@@ -341,6 +337,112 @@ div.chip-5-placed {
   margin-bottom: 10px;
 }
 
-.hideElementsTest {
- /* visibility: hidden;*/
+/* Estilos específicos para Telegram Mini App */
+:root {
+  --tg-theme-bg-color: var(--tg-theme-secondary-bg-color, #ffffff);
+  --tg-theme-text-color: var(--tg-theme-text-color, #000000);
+  --tg-theme-hint-color: var(--tg-theme-hint-color, #999999);
+  --tg-theme-link-color: var(--tg-theme-link-color, #2481cc);
+  --tg-theme-button-color: var(--tg-theme-button-color, #2481cc);
+  --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+/* Ajustes responsive para mini app */
+@media screen and (max-width: 768px) {
+  .roulette-board {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .roulette-wheel {
+    width: 280px;
+    height: 280px;
+    background-size: 280px 280px;
+  }
+
+  .roulette-wheel .layer-2,
+  .roulette-wheel .layer-3,
+  .roulette-wheel .layer-4,
+  .roulette-wheel .layer-5,
+  .ball-container {
+    background-size: 280px 280px;
+  }
+
+  ul li.board-chip div {
+    width: 40px;
+    height: 40px;
+    line-height: 43px;
+    font-size: 16px;
+  }
+
+  .winnerHistory, 
+  .winnersBoard {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .progressBar,
+  .linearProgressRounds {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+/* Ajustes para modo oscuro de Telegram */
+body.dark {
+  background-image: url(assets/felt.png),
+    -webkit-radial-gradient(50% 40%, circle farthest-corner, #1a2e0a, #0f1c05);
+}
+
+body.dark .credits-display {
+  background-color: #1C1E2E;
+  color: #FFD700;
+}
+
+body.dark .winnerItem,
+body.dark .winnerItemHeader {
+  color: #e6e6c8;
+}
+
+/* Mejoras de accesibilidad y UX */
+.credits-display {
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.roulette-board {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ul li.board-chip div {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Animaciones optimizadas */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.chip_selected {
+  animation: pulse 1s infinite;
+}
+
+/* Mejoras de rendimiento */
+.roulette-wheel,
+.ball-container,
+.roulette-wheel .layer-2,
+.roulette-wheel .layer-4 {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
